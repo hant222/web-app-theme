@@ -1,12 +1,91 @@
 version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@3.1.5
+  aws-s3: circleci/aws-s3@1.0.15
+
 jobs:
-  build:
+  build_project:
     docker:
-      - image: cimg/base:current
-    resource_class: undefined
+      - image: cimg/openjdk:17.0.2
+        environment:
+          TZ: "Asia/Singapore"
+    working_directory: ~/ci
+    environment:
+      # Customize the JVM maximum heap limit
+      MAVEN_OPTS: -Xmx3200m
+      TZ: "Asia/Singapore"
     steps:
-      - run: echo "Hi I'm on a Container Runner!"
+      - checkout:
+          path: ~/ci
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - ci-{{ checksum "pom.xml" }}
+            # fallback to using the latest cache if no exact match is found
+            - ci-
+      - save_cache:
+          paths:
+            - ~ci/.m2
+          key: ci-{{ checksum "pom.xml" }}
+      - run: mvn -Dmaven.test.skip=true package
+      - run:
+          command: "mkdir -p ~/ci/deployment"
+          name: "create folder for deployment"
+      - run:
+          command: "cd ~/ci/web-aws-dashboard-be/target && tar -rf ~/ci/deployment/dashboard-api.$TIME_DEPLOY.tar dashboard.jar"
+          name: "zip dashboard.jar"
+      - run:
+          command: "cd ~/ci/web-aws-dashboard-be/src/main && tar -rf ~/ci/deployment/dashboard-api.$TIME_DEPLOY.tar resources/"
+          name: "zip dashboard-api resources"
+      - store_artifacts:
+          path: ~/ci/deployment/
+      - persist_to_workspace:
+          root: ~/ci
+          paths:
+            - deployment
+  
+  deploy_uat:
+    executor: aws-cli/default
+    steps:
+      - attach_workspace:
+          at: ~/ci
+      - aws-s3/sync:
+          arguments: '--exclude * --include *.tar'
+          from: ~/ci/deployment/
+          to: ''
+  deploy_prod:
+    executor: aws-cli/default
+    steps:
+      - attach_workspace:
+          at: ~/ci
+      - aws-s3/sync:
+          arguments: '--exclude * --include *.tar'
+          from: ~/ci/deployment/
+          to: ''
+
+only-build-branches: &only-build-branches
+  filters:
+    branches:
+      only:
+        - uat
+        - master
+
 workflows:
-  build-workflow:
+  build_and_deploy:
     jobs:
-      - build
+      - build_project: *only-build-branches
+      - deploy_uat:
+          requires:
+            - build_project
+          filters:
+              branches:
+                only:
+                  - uat
+      - deploy_prod:
+          requires:
+            - build_project
+          filters:
+              branches:
+                only:
+                  - master
