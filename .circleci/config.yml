@@ -19,25 +19,17 @@ jobs:
       - checkout:
           path: ~/ci
       # Download and cache dependencies
+      - run:
+          command: echo "hello this fucking world" > ~/hello.txt
+      - save_cache:
+          name: Save hello.txt file to cache
+          key: ci-hello
       - restore_cache:
           keys:
-            - ci-{{ checksum "pom.xml" }}
+            - ci-hello
             # fallback to using the latest cache if no exact match is found
             - ci-
-      - save_cache:
-          paths:
-            - ~ci/.m2
-          key: ci-{{ checksum "pom.xml" }}
-      - run: mvn -Dmaven.test.skip=true package
-      - run:
-          command: "mkdir -p ~/ci/deployment"
-          name: "create folder for deployment"
-      - run:
-          command: "cd ~/ci/web-aws-dashboard-be/target && tar -rf ~/ci/deployment/dashboard-api.$TIME_DEPLOY.tar dashboard.jar"
-          name: "zip dashboard.jar"
-      - run:
-          command: "cd ~/ci/web-aws-dashboard-be/src/main && tar -rf ~/ci/deployment/dashboard-api.$TIME_DEPLOY.tar resources/"
-          name: "zip dashboard-api resources"
+          name: Get hello file from cache
       - store_artifacts:
           path: ~/ci/deployment/
       - persist_to_workspace:
