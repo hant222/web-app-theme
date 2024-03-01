@@ -21,10 +21,10 @@ jobs:
       # Download and cache dependencies
       - run:
           command: echo "hello this fucking world" > ~/hello.txt
-      - save_cache:
-          name: Save hello.txt file to cache
-          key: ci-hello
-          paths: ~/hello.txt
+      # - save_cache:
+      #     name: Save hello.txt file to cache
+      #     key: ci-hello
+      #     paths: ~/hello.txt
       - restore_cache:
           keys:
             - ci-hello
