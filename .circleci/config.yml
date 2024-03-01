@@ -20,7 +20,15 @@ jobs:
           path: ~/ci
       # Download and cache dependencies
       - run:
-          command: echo "hello this fucking world" > ~/hello.txt
+          name: Run without env configuration
+          command: |
+            echo "hello this fucking world" > ~/hello.txt
+            env
+      - run:
+          name: Test env of run key
+          command: env
+          environment:
+            ENV: DEV
       - save_cache:
           name: Save hello.txt file to cache
           key: ci-hello
