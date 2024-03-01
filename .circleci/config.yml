@@ -24,6 +24,7 @@ jobs:
       - save_cache:
           name: Save hello.txt file to cache
           key: ci-hello
+          paths: ~/hello.txt
       - restore_cache:
           keys:
             - ci-hello
