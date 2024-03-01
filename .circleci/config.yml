@@ -70,6 +70,7 @@ only-build-branches: &only-build-branches
       only:
         - uat
         - master
+        - circleci-project-setup
 
 workflows:
   build_and_deploy:
