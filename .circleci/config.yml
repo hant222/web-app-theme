@@ -72,12 +72,12 @@ only-build-branches: &only-build-branches
         - uat
         - master
         - circleci-project-setup
+  type: approval
 
 workflows:
   build_and_deploy:
     jobs:
       - build_project: *only-build-branches
-        type: approval
       - deploy_uat:
           requires:
             - build_project
